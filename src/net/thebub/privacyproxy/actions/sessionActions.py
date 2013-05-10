@@ -6,7 +6,7 @@ Created on 09.05.2013
 
 from twisted.python import log
 
-import MySQLdb, hashlib, uuid
+import MySQLdb, hashlib, uuid, string
 
 from net.thebub.privacyproxy.actions.apiAction import APIAction
 import APICall_pb2
@@ -21,20 +21,29 @@ class LoginAction(APIAction):
         result = self.protocol.dbCursor.fetchone()
         
         hashAlgorithm = hashlib.sha256()
-        passwordHash = hashAlgorithm.update(requestData.pasword + result[3]).hexdigest()
+        saltedPassword = string.join([requestData.password,result[3]],"")
+        hashAlgorithm.update(saltedPassword)
+        passwordHash = hashAlgorithm.hexdigest()
         
         response = APICall_pb2.APIResponse()
+        response.command = APICall_pb2.login
         
         if passwordHash == result[2]:
-            
-            
             sessionID = uuid.uuid4().hex
             
             self.protocol.dbCursor.execute("""INSERT INTO session(user_id,session_id) VALUES (%s,%s) ON DUPLICATE KEY UPDATE session_id = %s""",(result[0],sessionID,sessionID))
+            self.protocol.dbConnection.commit()
             
-            if self.protocol.dbCursor.rowcount == 1:
+            if self.protocol.dbCursor.rowcount == 1 or self.protocol.dbCursor.rowcount == 2:
                 response.success = True
                 response.errorCode = APICall_pb2.none
+                
+                responseData = APICall_pb2.LoginResponse()
+                responseData.username = requestData.username
+                responseData.sessionID = sessionID
+                
+                response.data = responseData.SerializeToString()
+                
             else:                
                 response.success = False
                 response.errorCode = APICall_pb2.unauthorized
@@ -47,12 +56,13 @@ class LoginAction(APIAction):
 class LogoutAction(APIAction):    
         
     def __init__(self,protocol):
-        super(LogoutAction,self).__init__(self,protocol)
+        super(LogoutAction,self).__init__(protocol)
         self.requiresAuthentication = True
         pass
     
     def process(self, data):
-        self.protocol.dbCursor.execute("""DELETE FROM session WHERE session.hash = %s;""",(self.protocol.sessionKey,))
+        self.protocol.dbCursor.execute("""DELETE FROM session WHERE session_id = %s;""",(self.protocol.sessionKey,))
+        self.protocol.dbConnection.commit()
         
         response = APICall_pb2.APIResponse()
         response.command = APICall_pb2.logout

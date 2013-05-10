@@ -25,16 +25,22 @@ class APIServerProtocol(Protocol,object):
         super(APIServerProtocol,self).__init__()
         self.factory = factory
         self.apiCall = APICall_pb2.APICall()
-        self.dbCursor = factory.databaseConnection.cursor()
+        self.dbConnection = factory.databaseConnection
+        self.dbCursor = self.dbConnection.cursor()
 
     def connectionMade(self):
-        log.msg("Connection made!")
+        pass
 
     def connectionLost(self, reason):
-        log.msg("Connection lost!")
+        pass
         
     def checkAuthentication(self,sessionKey):
-        self.sessionKey = sessionKey
+        self.dbCursor.execute("""SELECT 1 FROM session WHERE session_id = %s""",(sessionKey,))
+        
+        if self.dbCursor.rowcount == 1: 
+            self.sessionKey = sessionKey
+            return True        
+        
         return False
         
     def dataReceived(self, data):
@@ -46,9 +52,9 @@ class APIServerProtocol(Protocol,object):
         if request.command is not None and self.apiActions[request.command] is not None:
             action = self.apiActions[request.command](self)
             if not action.requiresAuthentication:
-                response = self.transport.write(action.process(request.arguemnts))
+                response = action.process(request.arguments)
             elif action.requiresAuthentication and request.sessionKey is not None and self.checkAuthentication(request.sessionKey):
-                response = self.transport.write(action.process(request.arguemnts))
+                response = action.process(request.arguments)
             else:
                 log.msg("Request processing failed")
                 
@@ -73,7 +79,7 @@ class APIServerFactory(Factory,object):
         super(APIServerFactory,self).__init__()
                       
         # Open the database connection
-        #self.databaseConnection = MySQLdb.connect(host=dbHost,user=dbUser,passwd=dbPassword,db=dbName)
+        self.databaseConnection = MySQLdb.connect(host=dbHost,user=dbUser,passwd=dbPassword,db=dbName)
         log.msg("Initialized API server successfully")
     
     def __del__(self):
@@ -88,6 +94,6 @@ class APIServerFactory(Factory,object):
 if __name__ == '__main__':
     log.startLogging(stdout)
     
-    reactor.listenTCP(8081, APIServerFactory())
+    reactor.listenTCP(8081, APIServerFactory("thebub.net","privacyproxy","seemoo!delphine"))
     reactor.run()
         
