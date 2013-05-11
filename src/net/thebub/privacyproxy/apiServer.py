@@ -9,9 +9,9 @@ from twisted.internet import reactor
 from twisted.python import log
 from sys import stdout
 
-import MySQLdb
-
 from net.thebub.privacyproxy.actions.sessionActions import LoginAction,LogoutAction
+from net.thebub.privacyproxy.db import DB
+
 import APICall_pb2
 
 class APIServerProtocol(Protocol,object):
@@ -21,12 +21,15 @@ class APIServerProtocol(Protocol,object):
                   APICall_pb2.logout : LogoutAction
     } 
     
-    def __init__(self, factory):
+    def __init__(self, factory, dbObject):
         super(APIServerProtocol,self).__init__()
-        self.factory = factory
+        self.factory = factory               
+        self.dbConnection = dbObject
+        
         self.apiCall = APICall_pb2.APICall()
-        self.dbConnection = factory.databaseConnection
-        self.dbCursor = self.dbConnection.cursor()
+
+    def __del__(self):
+        pass
 
     def connectionMade(self):
         pass
@@ -35,9 +38,9 @@ class APIServerProtocol(Protocol,object):
         pass
         
     def checkAuthentication(self,sessionKey):
-        self.dbCursor.execute("""SELECT 1 FROM session WHERE session_id = %s""",(sessionKey,))
-        
-        if self.dbCursor.rowcount == 1: 
+        self.dbConnection.query(("""SELECT 1 FROM session WHERE session_id = %s""",(sessionKey,)))
+                
+        if self.dbConnection.rowcount() == 1: 
             self.sessionKey = sessionKey
             return True        
         
@@ -71,15 +74,21 @@ class APIServerProtocol(Protocol,object):
         self.transport.write(response.SerializeToString())
 
 class APIServerFactory(Factory,object):
-    databaseConnection = None
+    _host = None
+    _user = None
+    _password = None
+    _database = None
     
     def __init__(self,dbHost="localhost",dbUser="privacyproxy",dbPassword="privacyproxy",dbName="privacyproxy"):
         log.msg("Initializing API server")
         # Initialize the factory
         super(APIServerFactory,self).__init__()
-                      
-        # Open the database connection
-        self.databaseConnection = MySQLdb.connect(host=dbHost,user=dbUser,passwd=dbPassword,db=dbName)
+        
+        self._host = dbHost
+        self._user = dbUser
+        self._password = dbPassword
+        self._database = dbName              
+        
         log.msg("Initialized API server successfully")
     
     def __del__(self):
@@ -88,8 +97,12 @@ class APIServerFactory(Factory,object):
             self.databaseConnection.close()
     
     def buildProtocol(self, addr):
-        # Create a APIProtocol instance
-        return APIServerProtocol(self)
+        
+        # Create DB object
+        dbObject = DB(self._host, self._user, self._password, self._database)
+        
+        # Create and return a APIProtocol instance
+        return APIServerProtocol(self, dbObject)
     
 if __name__ == '__main__':
     log.startLogging(stdout)

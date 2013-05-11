@@ -4,9 +4,7 @@ Created on 09.05.2013
 @author: dbub
 '''
 
-from twisted.python import log
-
-import MySQLdb, hashlib, uuid, string
+import hashlib, uuid, string
 
 from net.thebub.privacyproxy.actions.apiAction import APIAction
 import APICall_pb2
@@ -17,8 +15,8 @@ class LoginAction(APIAction):
         requestData = APICall_pb2.LoginData()
         requestData.ParseFromString(data)
         
-        self.protocol.dbCursor.execute("""SELECT id,username,password,user_salt FROM user WHERE username = %s """,(requestData.username,))
-        result = self.protocol.dbCursor.fetchone()
+        self.protocol.dbConnection.query(("""SELECT id,username,password,user_salt FROM user WHERE username = %s """,(requestData.username,)))
+        result = self.protocol.dbConnection.fetchone()
         
         hashAlgorithm = hashlib.sha256()
         saltedPassword = string.join([requestData.password,result[3]],"")
@@ -31,10 +29,10 @@ class LoginAction(APIAction):
         if passwordHash == result[2]:
             sessionID = uuid.uuid4().hex
             
-            self.protocol.dbCursor.execute("""INSERT INTO session(user_id,session_id) VALUES (%s,%s) ON DUPLICATE KEY UPDATE session_id = %s""",(result[0],sessionID,sessionID))
+            self.protocol.dbConnection.query(("""INSERT INTO session(user_id,session_id) VALUES (%s,%s) ON DUPLICATE KEY UPDATE session_id = %s""",(result[0],sessionID,sessionID)))
             self.protocol.dbConnection.commit()
             
-            if self.protocol.dbCursor.rowcount == 1 or self.protocol.dbCursor.rowcount == 2:
+            if self.protocol.dbConnection.rowcount() == 1 or self.protocol.dbConnection.rowcount() == 2:
                 response.success = True
                 response.errorCode = APICall_pb2.none
                 
@@ -61,7 +59,7 @@ class LogoutAction(APIAction):
         pass
     
     def process(self, data):
-        self.protocol.dbCursor.execute("""DELETE FROM session WHERE session_id = %s;""",(self.protocol.sessionKey,))
+        self.protocol.dbConnection.query(("""DELETE FROM session WHERE session_id = %s;""",(self.protocol.sessionKey,)))
         self.protocol.dbConnection.commit()
         
         response = APICall_pb2.APIResponse()
