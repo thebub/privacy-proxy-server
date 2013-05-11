@@ -59,7 +59,7 @@ class LogoutAction(APIAction):
         pass
     
     def process(self, data):
-        self.protocol.dbConnection.query(("""DELETE FROM session WHERE session_id = %s;""",(self.protocol.sessionKey,)))
+        self.protocol.dbConnection.query(("""DELETE FROM session WHERE session_id = %s AND user_id = %s;""",(self.protocol.sessionID,self.protocol.userID)))
         self.protocol.dbConnection.commit()
         
         response = APICall_pb2.APIResponse()

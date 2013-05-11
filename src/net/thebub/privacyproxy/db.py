@@ -54,3 +54,8 @@ class DB(object):
         else:
             return None
     
+    def fetchall(self):
+        if self._cursor is not None:
+            return self._cursor.fetchall()
+        else:
+            return None

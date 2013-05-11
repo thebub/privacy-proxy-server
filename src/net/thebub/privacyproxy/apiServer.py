@@ -10,6 +10,7 @@ from twisted.python import log
 from sys import stdout
 
 from net.thebub.privacyproxy.actions.sessionActions import LoginAction,LogoutAction
+from net.thebub.privacyproxy.actions.webLogActions import GetWebLogWebsitesAction,GetWebLogWebsiteDataAction
 from net.thebub.privacyproxy.db import DB
 
 import APICall_pb2
@@ -18,7 +19,9 @@ class APIServerProtocol(Protocol,object):
     
     apiActions = {
                   APICall_pb2.login : LoginAction,
-                  APICall_pb2.logout : LogoutAction
+                  APICall_pb2.logout : LogoutAction,
+                  APICall_pb2.getWebpages : GetWebLogWebsitesAction,
+                  APICall_pb2.getWebpageData : GetWebLogWebsiteDataAction
     } 
     
     def __init__(self, factory, dbObject):
@@ -37,11 +40,15 @@ class APIServerProtocol(Protocol,object):
     def connectionLost(self, reason):
         pass
         
-    def checkAuthentication(self,sessionKey):
-        self.dbConnection.query(("""SELECT 1 FROM session WHERE session_id = %s""",(sessionKey,)))
+    def checkAuthentication(self,sessionID):
+        self.dbConnection.query(("""SELECT user_id,session_id FROM session WHERE session_id = %s""",(sessionID,)))
                 
-        if self.dbConnection.rowcount() == 1: 
-            self.sessionKey = sessionKey
+        if self.dbConnection.rowcount() == 1:
+            result = self.dbConnection.fetchone()
+             
+            self.sessionID = sessionID
+            self.userID = result[0]
+                        
             return True        
         
         return False
