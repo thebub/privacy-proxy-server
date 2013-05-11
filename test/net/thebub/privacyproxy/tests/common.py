@@ -4,7 +4,7 @@ Created on 11.05.2013
 @author: dbub
 '''
 
-import socket
+import socket, sys
 import APICall_pb2
 
 class Connection(object):
@@ -43,6 +43,9 @@ class TestSummary():
         print "Tests run:\t\t",self.tests
         print "Successful tests:\t",self.testsSuccessful
         print "Failed tests:\t\t",self.testsFailed
+        
+        if self.testsFailed != 0:
+            sys.exit(1)
         
     def testRun(self,testSuccess):
         self.tests += 1
