@@ -17,7 +17,7 @@ if __name__ == '__main__':
     a.command = APICall_pb2.login
     a.arguments = l.SerializeToString()
     
-    test = common.Test("Creating connection - unsuccessful login", a, False)
+    test = common.Test("Creating connection - unsuccessful login", a, expectedSuccess=False,expectedError=APICall_pb2.unauthorized,requestClass=APICall_pb2.LoginData)
     responseData = test.run()
     
     l = APICall_pb2.LoginData()
@@ -37,5 +37,5 @@ if __name__ == '__main__':
     a.command = APICall_pb2.login
     a.arguments = l.SerializeToString()
     
-    test = common.Test("Testing SQL - unsuccessful login", a, False)
+    test = common.Test("Testing SQL - unsuccessful login", a, expectedSuccess=False,expectedError=APICall_pb2.unauthorized,requestClass=APICall_pb2.LoginData)
     responseData = test.run()

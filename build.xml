@@ -14,15 +14,15 @@
 		<mkdir dir="${build}"/>
 	</target>
 
-	<target name="compile" depends="init" description="compile the source ">		
+	<target name="compile" depends="init" description="compile the source ">	
+		<echo>Compiling protobuf files into python ...</echo>
+		
 		<pathconvert property="src.protoFilesString" pathsep=" ">
 			<fileset dir="${src.proto}">				
 				<include name="*.proto" />
 			</fileset>
 		</pathconvert>
 		
-		<echo>Compiling protobuf files into python ...</echo>
-
 		<exec executable="/opt/local/bin/protoc" dir="./">
 			<arg value="--python_out=${build}" />
 			<arg value="--proto_path=${src.proto}" />

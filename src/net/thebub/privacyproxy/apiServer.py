@@ -11,6 +11,7 @@ from sys import stdout
 
 from net.thebub.privacyproxy.actions.sessionActions import LoginAction,LogoutAction
 from net.thebub.privacyproxy.actions.webLogActions import GetWebLogWebsitesAction,GetWebLogWebsiteDataAction
+from net.thebub.privacyproxy.actions.userActions import CreateUserAction,DeleteUserAction,UpdateUserAction
 from net.thebub.privacyproxy.db import DB
 
 import APICall_pb2
@@ -18,10 +19,13 @@ import APICall_pb2
 class APIServerProtocol(Protocol,object):
     
     apiActions = {
-                  APICall_pb2.login : LoginAction,
-                  APICall_pb2.logout : LogoutAction,
-                  APICall_pb2.getWebpages : GetWebLogWebsitesAction,
-                  APICall_pb2.getWebpageData : GetWebLogWebsiteDataAction
+                  LoginAction.command : LoginAction,
+                  LogoutAction.command : LogoutAction,
+                  GetWebLogWebsitesAction.command : GetWebLogWebsitesAction,
+                  GetWebLogWebsiteDataAction.command : GetWebLogWebsiteDataAction,
+                  CreateUserAction.command : CreateUserAction,
+                  DeleteUserAction.command : DeleteUserAction,
+                  UpdateUserAction.command : UpdateUserAction 
     } 
     
     def __init__(self, factory, dbObject):
@@ -65,9 +69,7 @@ class APIServerProtocol(Protocol,object):
                 response = action.process(request.arguments)
             elif action.requiresAuthentication and request.sessionKey is not None and self.checkAuthentication(request.sessionKey):
                 response = action.process(request.arguments)
-            else:
-                log.msg("Request processing failed")
-                
+            else:                
                 response = APICall_pb2.APIResponse()
                 response.command = request.command
                 response.success = False

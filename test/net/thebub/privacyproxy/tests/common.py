@@ -44,9 +44,6 @@ class TestSummary():
         print "Successful tests:\t",self.testsSuccessful
         print "Failed tests:\t\t",self.testsFailed
         
-        if self.testsFailed != 0:
-            sys.exit(1)
-        
     def testRun(self,testSuccess):
         self.tests += 1
         if testSuccess:
@@ -59,17 +56,25 @@ class Test():
     connection = Connection()
     summary = TestSummary()
     
-    def __init__(self,title,message,expectedResult,responseClass = None):
+    def __init__(self,title,message,expectedSuccess,expectedError = None,responseClass = None,requestClass = None):
         self.title = title
         self.message = message
-        self.expectedResult = expectedResult
+        self.expectedSuccess = expectedSuccess
+        self.expectedError = expectedError
         self.responseClass = responseClass
+        self.requestClass = requestClass
                 
     def run(self):
         print "### Running test:",self.title,"###\n"
         
         print "Sending the following request:\n",self.message.__str__()
         
+        if self.requestClass is not None:
+            self.requestData = self.requestClass()
+            self.requestData.ParseFromString(self.message.arguments)
+            
+            print "With the following request data:\n",self.requestData.__str__()
+            
         self.response = Test.connection.sendMessage(self.message)
             
         print "Received the following response:\n",self.response.__str__()
@@ -78,9 +83,12 @@ class Test():
             self.responseData = self.responseClass()
             self.responseData.ParseFromString(self.response.data)
             
-            print "Received the following response data:\n",self.responseData.__str__()
+            print "With the following response data:\n",self.responseData.__str__()
         
-        if self.response.success == self.expectedResult:
+        if self.response.success == self.expectedSuccess and self.expectedError is None:
+            print "# Test was successful! #\n"
+            Test.summary.testRun(True)
+        elif self.response.success == self.expectedSuccess and self.expectedError is not None and self.response.errorCode == self.expectedError:
             print "# Test was successful! #\n"
             Test.summary.testRun(True)
         else:
