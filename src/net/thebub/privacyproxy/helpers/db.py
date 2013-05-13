@@ -42,6 +42,9 @@ class DB(object):
     
     def commit(self):
         self._connection.commit()
+        
+    def insertid(self):
+        return self._cursor.lastrowid
             
     def rowcount(self):
         if self._cursor is not None:

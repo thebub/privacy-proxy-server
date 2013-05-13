@@ -9,10 +9,11 @@ from twisted.internet import reactor
 from twisted.python import log
 from sys import stdout
 
-from net.thebub.privacyproxy.actions.sessionActions import LoginAction,LogoutAction
-from net.thebub.privacyproxy.actions.webLogActions import GetWebLogWebsitesAction,GetWebLogWebsiteDataAction
-from net.thebub.privacyproxy.actions.userActions import CreateUserAction,DeleteUserAction,UpdateUserAction
-from net.thebub.privacyproxy.db import DB
+from net.thebub.privacyproxy.apiserver.actions.sessionActions import LoginAction,LogoutAction
+from net.thebub.privacyproxy.apiserver.actions.webLogActions import GetWebLogWebsitesAction,GetWebLogWebsiteDataAction
+from net.thebub.privacyproxy.apiserver.actions.userActions import CreateUserAction,DeleteUserAction,UpdateUserAction
+from net.thebub.privacyproxy.apiserver.actions.settingActions import GetSettingsAction,UpdateSettingAction
+from net.thebub.privacyproxy.helpers.db import DB
 
 import APICall_pb2
 
@@ -25,33 +26,29 @@ class APIServerProtocol(Protocol,object):
                   GetWebLogWebsiteDataAction.command : GetWebLogWebsiteDataAction,
                   CreateUserAction.command : CreateUserAction,
                   DeleteUserAction.command : DeleteUserAction,
-                  UpdateUserAction.command : UpdateUserAction 
+                  UpdateUserAction.command : UpdateUserAction,
+                  GetSettingsAction.command : GetSettingsAction,
+                  UpdateSettingAction.command : UpdateSettingAction
     } 
     
     def __init__(self, factory, dbObject):
         super(APIServerProtocol,self).__init__()
-        self.factory = factory               
-        self.dbConnection = dbObject
+        self._factory = factory               
+        self._dbConnection = dbObject
+        
+        self._userID = None
+        self._sessionID = None
         
         self.apiCall = APICall_pb2.APICall()
-
-    def __del__(self):
-        pass
-
-    def connectionMade(self):
-        pass
-
-    def connectionLost(self, reason):
-        pass
         
-    def checkAuthentication(self,sessionID):
-        self.dbConnection.query(("""SELECT user_id,session_id FROM session WHERE session_id = %s""",(sessionID,)))
+    def _checkAuthentication(self,sessionID):
+        self._dbConnection.query(("""SELECT user_id,session_id FROM session WHERE session_id = %s""",(sessionID,)))
                 
-        if self.dbConnection.rowcount() == 1:
-            result = self.dbConnection.fetchone()
+        if self._dbConnection.rowcount() == 1:
+            result = self._dbConnection.fetchone()
              
-            self.sessionID = sessionID
-            self.userID = result[0]
+            self._sessionID = sessionID
+            self._userID = result[0]
                         
             return True        
         
@@ -64,16 +61,14 @@ class APIServerProtocol(Protocol,object):
         response = None
         
         if request.command is not None and self.apiActions[request.command] is not None:
-            action = self.apiActions[request.command](self)
-            if not action.requiresAuthentication:
-                response = action.process(request.arguments)
-            elif action.requiresAuthentication and request.sessionKey is not None and self.checkAuthentication(request.sessionKey):
-                response = action.process(request.arguments)
-            else:                
+            if self.apiActions[request.command].requiresAuthentication and request.sessionKey is not None and not self._checkAuthentication(request.sessionKey):
                 response = APICall_pb2.APIResponse()
                 response.command = request.command
                 response.success = False
                 response.errorCode = APICall_pb2.unauthorized
+            else:                                
+                action = self.apiActions[request.command](self._dbConnection,self._userID,self._sessionID)           
+                response = action.process(request.arguments)
         else:
             response = APICall_pb2.APIResponse()
             response.command = APICall_pb2.unknown
@@ -105,8 +100,7 @@ class APIServerFactory(Factory,object):
         if self.databaseConnection is not None:
             self.databaseConnection.close()
     
-    def buildProtocol(self, addr):
-        
+    def buildProtocol(self,addr):        
         # Create DB object
         dbObject = DB(self._host, self._user, self._password, self._database)
         
