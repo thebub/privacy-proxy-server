@@ -5,6 +5,10 @@ Created on 11.05.2013
 '''
 
 import socket, sys
+
+from google.protobuf.internal.decoder import _DecodeVarint
+from google.protobuf.internal.encoder import _VarintEncoder
+
 import APICall_pb2
 
 class Connection(object):
@@ -15,6 +19,9 @@ class Connection(object):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect(("127.0.0.1",8081))
         
+        self.varint_encoder = _VarintEncoder()
+        self.varint_decoder = _DecodeVarint
+        
         pass
     
     def __del__(self):
@@ -22,12 +29,18 @@ class Connection(object):
         pass
     
     def sendMessage(self,message):
-        self.socket.sendall(message.SerializeToString())
-    
+        serialized = message.SerializeToString()
+        serializedLen = len(serialized)
+        
+        self.varint_encoder(self.socket.send, serializedLen)
+        self.socket.sendall(serialized) 
+            
         data = self.socket.recv(1024)
         
+        (size, pos) = self.varint_decoder(data, 0)
+        
         r = APICall_pb2.APIResponse()
-        r.ParseFromString(data)
+        r.ParseFromString(data[pos:])
         
         return r
     
