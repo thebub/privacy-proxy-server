@@ -9,7 +9,7 @@ import socket, sys
 from google.protobuf.internal.decoder import _DecodeVarint
 from google.protobuf.internal.encoder import _VarintEncoder
 
-import APICall_pb2
+import PrivacyProxyAPI_pb2
 
 class Connection(object):
     
@@ -39,7 +39,7 @@ class Connection(object):
         
         (size, pos) = self.varint_decoder(data, 0)
         
-        r = APICall_pb2.APIResponse()
+        r = PrivacyProxyAPI_pb2.APIResponse()
         r.ParseFromString(data[pos:])
         
         return r

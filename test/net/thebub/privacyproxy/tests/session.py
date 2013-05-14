@@ -5,41 +5,41 @@ Created on 10.05.2013
 '''
 
 import common
-import APICall_pb2
+import PrivacyProxyAPI_pb2
 
 if __name__ == '__main__':
-    l = APICall_pb2.LoginData()
+    l = PrivacyProxyAPI_pb2.LoginData()
     l.username = "admin"
     l.password = "stupid"
     
-    a = APICall_pb2.APICall()
-    a.command = APICall_pb2.login
+    a = PrivacyProxyAPI_pb2.APICall()
+    a.command = PrivacyProxyAPI_pb2.login
     a.arguments = l.SerializeToString()
     
-    test = common.Test("Unsuccessful login", a, expectedSuccess=False,expectedError=APICall_pb2.unauthorized,requestClass=APICall_pb2.LoginData)
+    test = common.Test("Unsuccessful login", a, expectedSuccess=False,expectedError=PrivacyProxyAPI_pb2.unauthorized,requestClass=PrivacyProxyAPI_pb2.LoginData)
     responseData = test.run()
     
-    l = APICall_pb2.LoginData()
+    l = PrivacyProxyAPI_pb2.LoginData()
     l.username = "admin"
     l.password = "bla"
     
-    a = APICall_pb2.APICall()
-    a.command = APICall_pb2.login
+    a = PrivacyProxyAPI_pb2.APICall()
+    a.command = PrivacyProxyAPI_pb2.login
     a.arguments = l.SerializeToString()
     
-    test = common.Test("Successful login", a, expectedSuccess=True,requestClass=APICall_pb2.LoginData,responseClass=APICall_pb2.LoginResponse)
+    test = common.Test("Successful login", a, expectedSuccess=True,requestClass=PrivacyProxyAPI_pb2.LoginData,responseClass=PrivacyProxyAPI_pb2.LoginResponse)
     sessionID = test.run().sessionID
     
-    a = APICall_pb2.APICall()
-    a.command = APICall_pb2.logout
+    a = PrivacyProxyAPI_pb2.APICall()
+    a.command = PrivacyProxyAPI_pb2.logout
     a.sessionKey = sessionID
     
     test = common.Test("Successful logout", a, expectedSuccess=True)
     test.run()
     
-    a = APICall_pb2.APICall()
-    a.command = APICall_pb2.logout
+    a = PrivacyProxyAPI_pb2.APICall()
+    a.command = PrivacyProxyAPI_pb2.logout
     a.sessionKey = sessionID
     
-    test = common.Test("Unsuccessful logout", a, expectedSuccess=False,expectedError=APICall_pb2.unauthorized)
+    test = common.Test("Unsuccessful logout", a, expectedSuccess=False,expectedError=PrivacyProxyAPI_pb2.unauthorized)
     test.run()

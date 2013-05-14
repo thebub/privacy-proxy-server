@@ -18,7 +18,7 @@ from net.thebub.privacyproxy.apiserver.actions.userActions import CreateUserActi
 from net.thebub.privacyproxy.apiserver.actions.settingActions import GetSettingsAction,UpdateSettingAction
 
 
-import APICall_pb2
+import PrivacyProxyAPI_pb2
 
 class APIServerProtocol(ProtobufDelimitedProtocol):
     
@@ -34,7 +34,7 @@ class APIServerProtocol(ProtobufDelimitedProtocol):
                   UpdateSettingAction.command : UpdateSettingAction
     }
     
-    _message_class = APICall_pb2.APICall
+    _message_class = PrivacyProxyAPI_pb2.APICall
     
     _sessionID = None
     _userID = None
@@ -62,18 +62,18 @@ class APIServerProtocol(ProtobufDelimitedProtocol):
         
         if request.command is not None and self.apiActions[request.command] is not None:
             if self.apiActions[request.command].requiresAuthentication and request.sessionKey is not None and not self._checkAuthentication(request.sessionKey):
-                response = APICall_pb2.APIResponse()
+                response = PrivacyProxyAPI_pb2.APIResponse()
                 response.command = request.command
                 response.success = False
-                response.errorCode = APICall_pb2.unauthorized
+                response.errorCode = PrivacyProxyAPI_pb2.unauthorized
             else:                                
                 action = self.apiActions[request.command](self._dbConnection,self._userID,self._sessionID)           
                 response = action.process(request.arguments)
         else:
-            response = APICall_pb2.APIResponse()
-            response.command = APICall_pb2.unknown
+            response = PrivacyProxyAPI_pb2.APIResponse()
+            response.command = PrivacyProxyAPI_pb2.unknown
             response.success = False
-            response.errorCode = APICall_pb2.badRequest
+            response.errorCode = PrivacyProxyAPI_pb2.badRequest
         
         self.sendMessage(response)
 
