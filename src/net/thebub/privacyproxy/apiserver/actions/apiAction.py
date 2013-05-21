@@ -4,7 +4,7 @@ Created on 09.05.2013
 @author: dbub
 '''
 
-import APICall_pb2
+import PrivacyProxyAPI_pb2
 
 class APIAction(object):
     requiresAuthentication = False
@@ -20,10 +20,10 @@ class APIAction(object):
         raise NotImplementedError(self.__class__, "This APIAction does not implement request processing")
     
     def _returnSuccess(self,data = None):
-        response = APICall_pb2.APIResponse()        
+        response = PrivacyProxyAPI_pb2.APIResponse()        
         response.command = self.command
         response.success = True
-        response.errorCode = APICall_pb2.none
+        response.errorCode = PrivacyProxyAPI_pb2.none
         
         if data is not None:
             response.data = data.SerializeToString()
@@ -31,7 +31,7 @@ class APIAction(object):
         return response
     
     def _returnError(self,errorCode):
-        response = APICall_pb2.APIResponse()
+        response = PrivacyProxyAPI_pb2.APIResponse()
         response.command = self.command
         response.success = False
         response.errorCode = errorCode

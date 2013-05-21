@@ -6,17 +6,17 @@ Created on 10.05.2013
 
 from net.thebub.privacyproxy.apiserver.actions.apiAction import APIAction
 
-import APICall_pb2
+import PrivacyProxyAPI_pb2
 
 class GetWebLogWebsitesAction(APIAction):
     
     requiresAuthentication = True
-    command = APICall_pb2.getWebpages
+    command = PrivacyProxyAPI_pb2.getWebpages
     
     def process(self, data):
         self.dbConnection.query(("""SELECT website.id,website.url FROM website_log, website WHERE website_log.user_id = %s AND website_log.website_id = website.id;""",(self.userID,)))
         
-        responseData = APICall_pb2.WebLogWebsitesResponse()
+        responseData = PrivacyProxyAPI_pb2.WebLogWebsitesResponse()
         
         for websiteID, url in self.dbConnection.fetchall():
             website = responseData.pages.add()
@@ -28,15 +28,15 @@ class GetWebLogWebsitesAction(APIAction):
 class GetWebLogWebsiteDataAction(APIAction):    
     
     requiresAuthentication = True
-    command = APICall_pb2.getWebpageData
+    command = PrivacyProxyAPI_pb2.getWebpageData
       
     def process(self, data):        
-        requestData = APICall_pb2.WebLogWebsiteDataRequest()
+        requestData = PrivacyProxyAPI_pb2.WebLogWebsiteDataRequest()
         requestData.ParseFromString(data)
         
         self.dbConnection.query(("""SELECT website_visit.id, website_visit.visitdate FROM website_visit WHERE website_visit.website_log_user_id = %s AND website_log_website_id = %s;""",(self.userID,requestData.id)))
                 
-        responseData = APICall_pb2.WebLogWebsiteDataResponse()
+        responseData = PrivacyProxyAPI_pb2.WebLogWebsiteDataResponse()
         responseData.id = requestData.id
         
         for visitID, visitdate in self.dbConnection.fetchall():

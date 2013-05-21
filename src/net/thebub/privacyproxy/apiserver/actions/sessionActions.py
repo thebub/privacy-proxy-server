@@ -9,14 +9,14 @@ import uuid
 from net.thebub.privacyproxy.apiserver.actions.apiAction import APIAction
 from net.thebub.privacyproxy.helpers.password import PasswordHelper
 
-import APICall_pb2
+import PrivacyProxyAPI_pb2
 
 class LoginAction(APIAction,PasswordHelper):
 
-    command = APICall_pb2.login
+    command = PrivacyProxyAPI_pb2.login
 
     def process(self, data):
-        requestData = APICall_pb2.LoginData()
+        requestData = PrivacyProxyAPI_pb2.LoginData()
         requestData.ParseFromString(data)
         
         self.dbConnection.query(("""SELECT id,username,password,password_salt FROM user WHERE username = %s """,(requestData.username,)))
@@ -32,18 +32,18 @@ class LoginAction(APIAction,PasswordHelper):
                 if self.dbConnection.rowcount() == 1 or self.dbConnection.rowcount() == 2:
                     self.dbConnection.commit()
                                         
-                    responseData = APICall_pb2.LoginResponse()
+                    responseData = PrivacyProxyAPI_pb2.LoginResponse()
                     responseData.username = requestData.username
                     responseData.sessionID = sessionID
                                         
                     return self._returnSuccess(responseData)
         
-        return self._returnError(APICall_pb2.unauthorized)
+        return self._returnError(PrivacyProxyAPI_pb2.unauthorized)
     
 class LogoutAction(APIAction):    
     
     requiresAuthentication = True
-    command = APICall_pb2.logout
+    command = PrivacyProxyAPI_pb2.logout
     
     def process(self, data):
         self.dbConnection.query(("""DELETE FROM session WHERE session_id = %s AND user_id = %s;""",(self.sessionID,self.userID)))

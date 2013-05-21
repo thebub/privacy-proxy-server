@@ -3,6 +3,7 @@
 	</description>
 
 	<!-- set global properties for this build -->
+	<property name="src.py" location="src"/>
 	<property name="src.proto" location="common/protobuf"/>
 	<property name="build" location="build"/>
 	<property name="dist"  location="dist"/>
@@ -31,9 +32,32 @@
 		
 		<echo>Finished compiling protobuf files.</echo>
 	</target>
+	
+	<target name="dist" depends="compile">
+		<echo>Copying files to dist folder ...</echo>
+		
+		<copy todir="${dist}">
+			<fileset dir="${src.py}">
+				<include name="**/*.py"/>
+				<include name="**/*.tac"/>
+			</fileset>
+			<fileset dir="${build}">
+				<include name="**/*.py"/>
+			</fileset>
+			<fileset dir="${basedir}">
+				<include name="privacyproxy.cfg"/>
+			</fileset>
+		</copy>
+
+		<echo>Finished copying files to dist folder.</echo>
+	</target>
 
 	<target name="clean" description="clean up">
-		<!-- Delete the ${build} and ${dist} directory trees -->
+		<echo>Cleaning working directory ...</echo>
+		
 		<delete dir="${build}"/>
+		<delete dir="${dist}"/>
+
+		<echo>Finished cleaning working dir.</echo>
 	</target>
 </project>
