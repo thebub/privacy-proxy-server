@@ -5,9 +5,7 @@ Created on 08.05.2013
 '''
 
 from twisted.internet.protocol import Factory
-from twisted.internet import reactor
 from twisted.python import log
-from sys import stdout
 
 from net.thebub.privacyproxy.twisted.protobuf_delimited_protocol import ProtobufDelimitedProtocol
 from net.thebub.privacyproxy.helpers.db import DB
@@ -83,7 +81,7 @@ class APIServerFactory(Factory,object):
     _password = None
     _database = None
     
-    def __init__(self,dbHost="localhost",dbUser="privacyproxy",dbPassword="privacyproxy",dbName="privacyproxy"):
+    def __init__(self,dbHost,dbUser,dbPassword,dbName):
         log.msg("Initializing API server")
         # Initialize the factory
         super(APIServerFactory,self).__init__()
@@ -107,9 +105,3 @@ class APIServerFactory(Factory,object):
         # Create and return a APIProtocol instance
         return APIServerProtocol(self, dbObject)
     
-if __name__ == '__main__':
-    log.startLogging(stdout)
-    
-    reactor.listenTCP(8081, APIServerFactory("thebub.net","privacyproxy","seemoo!delphine"))
-    reactor.run()
-        

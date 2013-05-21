@@ -44,6 +44,9 @@
 			<fileset dir="${build}">
 				<include name="**/*.py"/>
 			</fileset>
+			<fileset dir="${basedir}">
+				<include name="privacyproxy.cfg"/>
+			</fileset>
 		</copy>
 
 		<echo>Finished copying files to dist folder.</echo>

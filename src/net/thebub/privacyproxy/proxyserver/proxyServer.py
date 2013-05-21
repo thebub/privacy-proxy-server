@@ -5,9 +5,7 @@ Created on 13.05.2013
 '''
 
 from twisted.web import proxy, http
-from twisted.internet import reactor
-from twisted.python import log
-import sys, hashlib, string, threading
+import hashlib, string
 
 from net.thebub.privacyproxy.twisted.authProxyRequest import AuthProxyRequest
 from net.thebub.privacyproxy.helpers.db import DB
@@ -16,18 +14,13 @@ from net.thebub.privacyproxy.proxyserver.analysisThread import analysisQueue,Ana
 class PrivacyProxyRequest(AuthProxyRequest,object):
     _realmName = "PrivacyProxy"
     _userID = None
-    
-    _dbHost = "thebub.net"
-    _dbUser = "privacyproxy"
-    _dbPassword = "seemoo!delphine"
-    _dbDatabase = "privacyproxy"
-    
+        
     def requiresUserAuth(self):
         return True
             
     def checkUserAuth(self, username, password):
         hashAlgorithm = hashlib.sha256()
-        self.dbConnection = DB(self._dbHost, self._dbUser, self._dbPassword, self._dbDatabase)
+        self.dbConnection = DB(self.channel._dbHost, self.channel._dbUser, self.channel._dbPassword, self.channel._dbDatabase)
         
         self.dbConnection.query(("""SELECT password_salt FROM user WHERE username = %s;""",(username,)))
         
@@ -63,16 +56,35 @@ class PrivacyProxyRequest(AuthProxyRequest,object):
 
 class PrivacyProxy(proxy.Proxy):
     requestFactory = PrivacyProxyRequest
+    
+    def __init__(self,dbHost,dbUser,dbPassword,dbDatabase):
+        proxy.Proxy.__init__(self)
+        
+        self._dbHost = dbHost
+        self._dbUser = dbUser
+        self._dbPassword = dbPassword
+        self._dbDatabase = dbDatabase
 
 class PrivacyProxyFactory(http.HTTPFactory):
+    
+    _analysisThreadPool = []
+    
+    def __init__(self,dbHost,dbUser,dbPassword,dbDatabase,threadCount):
+        http.HTTPFactory.__init__(self)
+        
+        self._dbHost = dbHost
+        self._dbUser = dbUser
+        self._dbPassword = dbPassword
+        self._dbDatabase = dbDatabase
+        
+        for i in range(threadCount):
+            t = AnalysisThread()
+            t.start()
+            self._analysisThreadPool.append(t)
+            
+    def __del__(self):
+        analysisQueue.join()
+    
     def buildProtocol(self, addr):
-        return PrivacyProxy()
-
-if __name__ == '__main__':
-    log.startLogging(sys.stdout)
+        return PrivacyProxy(self._dbHost,self._dbUser,self._dbPassword,self._dbDatabase)
     
-    t = AnalysisThread()
-    t.start()
-    
-    reactor.listenTCP(8080, PrivacyProxyFactory())
-    reactor.run()

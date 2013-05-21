@@ -5,18 +5,23 @@ Created on 21.05.2013
 '''
 
 from twisted.application import internet, service
+import ConfigParser
 
 from net.thebub.privacyproxy.proxyserver.proxyServer import PrivacyProxyFactory
 from net.thebub.privacyproxy.apiserver.apiServer import APIServerFactory
 
-# Create a MultiService, and hook up a TCPServer and a UDPServer to it as
-# children.
+config = ConfigParser.ConfigParser()
+config.readfp(open('privacyproxy.cfg'))
+
 privacyProxyService = service.MultiService()
 
-internet.TCPServer(8080, PrivacyProxyFactory()).setServiceParent(privacyProxyService)
-internet.TCPServer(8081, APIServerFactory("thebub.net","privacyproxy","seemoo!delphine")).setServiceParent(privacyProxyService)
+proxyServerProtocol = PrivacyProxyFactory(config.get("proxyServer", "dbHost"),config.get("proxyServer","dbUser"),config.get("proxyServer", "dbPassword"),config.get("proxyServer", "dbDatabase"),config.getint("proxyServer", "analysisThreadCount"))
+proxyServer = internet.TCPServer(config.getint("proxyServer", "listenPort"),proxyServerProtocol)
+proxyServer.setServiceParent(privacyProxyService)
 
-# Create an application as normal
+apiServerProtocol = APIServerFactory(config.get("apiServer", "dbHost"),config.get("apiServer","dbUser"),config.get("apiServer", "dbPassword"),config.get("apiServer", "dbDatabase"))
+apiServer = internet.TCPServer(config.getint("apiServer", "listenPort"),apiServerProtocol)
+apiServer.setServiceParent(privacyProxyService)
+
 application = service.Application("PrivacyProxy")
-# Connect our MultiService to the application, just like a normal service.
 privacyProxyService.setServiceParent(application)
