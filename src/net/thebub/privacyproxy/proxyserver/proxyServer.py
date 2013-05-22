@@ -5,6 +5,7 @@ Created on 13.05.2013
 '''
 
 from twisted.web import proxy, http
+from twisted.python import log
 import hashlib, string
 
 from net.thebub.privacyproxy.twisted.authProxyRequest import AuthProxyRequest
@@ -77,13 +78,18 @@ class PrivacyProxyFactory(http.HTTPFactory):
         self._dbPassword = dbPassword
         self._dbDatabase = dbDatabase
         
+        log.msg("Populating thread pool")
+        
         for i in range(threadCount):
             t = AnalysisThread()
+            t.daemon = True
             t.start()
             self._analysisThreadPool.append(t)
             
     def __del__(self):
+        log.msg("Waiting for thread pool to finish work")
         analysisQueue.join()
+        log.msg("All threads finished")
     
     def buildProtocol(self, addr):
         return PrivacyProxy(self._dbHost,self._dbUser,self._dbPassword,self._dbDatabase)
