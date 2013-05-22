@@ -16,14 +16,12 @@ class AnalysisThread(threading.Thread):
     implements(interfaces.ILoggingContext)
             
     def logPrefix(self):    
-        return self.__class__.__name__ + "[" + self.getName() + "] - "
-        
-    def log(self,msg):
-        log.msg(self.logPrefix() + msg)
- 
+        return self.__class__.__name__ + "(" + self.getName() + ")"
+     
     def run(self):
-        self.log("Thread starting")
+        log.msg("Thread starting",system=self.logPrefix())
         while True:
             analysisData = analysisQueue.get()        
-            self.log(str(analysisData))
+            log.msg(str(analysisData),system=self.logPrefix())
+            analysisQueue.task_done()
     
