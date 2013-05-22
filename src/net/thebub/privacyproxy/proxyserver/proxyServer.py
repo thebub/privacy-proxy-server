@@ -6,7 +6,7 @@ Created on 13.05.2013
 
 from twisted.web import proxy, http
 from twisted.python import log
-import hashlib, string
+import hashlib, string, re
 
 from net.thebub.privacyproxy.twisted.authProxyRequest import AuthProxyRequest
 from net.thebub.privacyproxy.helpers.db import DB
@@ -40,20 +40,36 @@ class PrivacyProxyRequest(AuthProxyRequest,object):
             
         return False
     
-    def proxyRequestReceived(self):
+    def stripURL(self):
+        url = self.path
         
-        analysisData = {}
-        analysisData['userID'] = self._userID
-        analysisData['post'] = "POST"
-        analysisData['get'] = "GET"
-        analysisData['ajax'] = "AJAX"
+        result = re.search('https?://(?:[a-zA-Z0-9\-]*\.)*(?:([a-zA-Z0-9\-]+\.[a-zA-Z0-9]{2,4})/?).*',url)
+        
+        if result is None:
+            return None
                 
-        analysisQueue.put(analysisData)
+        return result.group(1)
+    
+    def proxyRequestReceived(self):
         
         try:
             proxy.ProxyRequest.process(self)
         except KeyError:
             print "HTTPS is not supported at the moment!"
+            self.finish()
+            return
+                
+        analysisData = []
+        analysisData.append("POST")
+        analysisData.append("GET")
+        analysisData.append("AJAX")
+        
+        analysisQueueEntry = {}
+        analysisQueueEntry['userID'] = self._userID
+        analysisQueueEntry['url'] = self.stripURL()
+        analysisQueueEntry['data'] = analysisData
+        
+        analysisQueue.put(analysisQueueEntry)        
 
 class PrivacyProxy(proxy.Proxy):
     requestFactory = PrivacyProxyRequest
@@ -81,7 +97,7 @@ class PrivacyProxyFactory(http.HTTPFactory):
         log.msg("Populating thread pool")
         
         for i in range(threadCount):
-            t = AnalysisThread()
+            t = AnalysisThread(dbHost,dbUser,dbPassword,dbDatabase)
             t.daemon = True
             t.start()
             self._analysisThreadPool.append(t)
