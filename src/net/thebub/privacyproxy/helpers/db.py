@@ -31,7 +31,9 @@ class DB(object):
         if self._connection is not None:
             if self._cursor is not None:
                 self._cursor.close()
+                self._cursor = None
             self._connection.close()
+            self._connection = None
     
     def query(self,sql):
         try:
