@@ -71,7 +71,9 @@ class PrivacyProxyRequest(AuthProxyRequest,object):
         analysisQueueEntry['url'] = url
         analysisQueueEntry['data'] = analysisData
         
-        analysisQueue.put(analysisQueueEntry)        
+        analysisQueue.put(analysisQueueEntry)   
+        
+        self.dbConnection.diconnect()     
 
 class PrivacyProxy(proxy.Proxy):
     requestFactory = PrivacyProxyRequest
