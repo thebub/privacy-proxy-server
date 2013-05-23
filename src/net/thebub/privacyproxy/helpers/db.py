@@ -22,13 +22,16 @@ class DB(object):
         self._database = dbName
         
     def __del__(self):
+        self.diconnect()
+        
+    def _connect(self):
+        self._connection = MySQLdb.connect(host=self._host,user=self._user,passwd=self._password,db=self._database)
+        
+    def diconnect(self):
         if self._connection is not None:
             if self._cursor is not None:
                 self._cursor.close()
             self._connection.close()
-    
-    def _connect(self):
-        self._connection = MySQLdb.connect(host=self._host,user=self._user,passwd=self._password,db=self._database)
     
     def query(self,sql):
         try:
