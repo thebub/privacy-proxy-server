@@ -40,15 +40,15 @@ class PrivacyProxyRequest(AuthProxyRequest,object):
             
         return False
     
-    def stripURL(self):
+    def analyzeURL(self):
         url = self.path
         
-        result = re.search('https?://(?:[a-zA-Z0-9\-]*\.)*(?:([a-zA-Z0-9\-]+\.[a-zA-Z0-9]{2,4})/?).*',url)
+        result = re.search('https?://(?:[a-zA-Z0-9\-]*\.)*(?:([a-zA-Z0-9\-]+\.[a-zA-Z0-9]{2,4})/?)(.*)',url)
         
         if result is None:
             return None
                 
-        return result.group(1)
+        return (result.group(1),result.group(2))
     
     def proxyRequestReceived(self):
         
@@ -58,15 +58,17 @@ class PrivacyProxyRequest(AuthProxyRequest,object):
             print "HTTPS is not supported at the moment!"
             self.finish()
             return
+        
+        url, postParameters = self.analyzeURL()
                 
         analysisData = []
-        analysisData.append("POST")
+        analysisData.append(postParameters)
         analysisData.append("GET")
         analysisData.append("AJAX")
         
         analysisQueueEntry = {}
         analysisQueueEntry['userID'] = self._userID
-        analysisQueueEntry['url'] = self.stripURL()
+        analysisQueueEntry['url'] = url
         analysisQueueEntry['data'] = analysisData
         
         analysisQueue.put(analysisQueueEntry)        
@@ -96,7 +98,7 @@ class PrivacyProxyFactory(http.HTTPFactory):
         
         log.msg("Populating thread pool")
         
-        for i in range(threadCount):
+        for _ in range(threadCount):
             t = AnalysisThread(dbHost,dbUser,dbPassword,dbDatabase)
             t.daemon = True
             t.start()

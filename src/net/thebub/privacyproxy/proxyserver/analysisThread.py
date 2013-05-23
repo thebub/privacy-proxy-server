@@ -33,11 +33,11 @@ class AnalysisThread(threading.Thread):
         
         return None
     
-    def analyzeData(self,data,dataSalt):
+    def analyzeData(self,data,userID,dataSalt):
         analysisResults = []
         
         for analysisEngine in analysisActions:
-            engine = analysisEngine(dataSalt)
+            engine = analysisEngine(self,userID,dataSalt)
             analysisResults.extend(engine.analyze(data))
             
         return analysisResults
@@ -49,8 +49,10 @@ class AnalysisThread(threading.Thread):
         log.msg("Thread starting",system=self.logPrefix())
         while True:
             analysisQueueEntry = analysisQueue.get()
+            
+            userID = analysisQueueEntry['userID']
                                     
-            dataSalt = self._getUserDataSalt(analysisQueueEntry['userID'])
+            dataSalt = self._getUserDataSalt(userID)
         
             log.msg(analysisQueueEntry['url'],system=self.logPrefix())
                         
@@ -60,13 +62,13 @@ class AnalysisThread(threading.Thread):
                 log.msg(dataEntry,system=self.logPrefix())
                 
                 if type(dataEntry) == str:
-                    analysisResults.extend(self.analyzeData(dataEntry, dataSalt))
+                    analysisResults.extend(self.analyzeData(dataEntry, userID, dataSalt))
                 elif type(dataEntry) == list:
                     for data in dataEntry:
-                        analysisResults.extend(self.analyzeData(data, dataSalt))
+                        analysisResults.extend(self.analyzeData(data, userID, dataSalt))
                 elif type(dataEntry) == dict:
-                    for key,data in dataEntry:
-                        analysisResults.extend(self.analyzeData(data, dataSalt))
+                    for _,data in dataEntry:
+                        analysisResults.extend(self.analyzeData(data, userID, dataSalt))
             
             if len(analysisResults) > 0:
                 self.storeEntries(analysisQueueEntry['userID'],analysisQueueEntry['url'],analysisResults)
