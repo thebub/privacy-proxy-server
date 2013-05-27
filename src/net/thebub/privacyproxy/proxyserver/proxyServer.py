@@ -59,21 +59,23 @@ class PrivacyProxyRequest(AuthProxyRequest,object):
             self.finish()
             return
         
-        url, postParameters = self.analyzeURL()
+        domain, _ = self.analyzeURL()
                 
-        analysisData = []
-        analysisData.append(postParameters)
-        analysisData.append("GET")
-        analysisData.append("AJAX")
+        analysisData = ""
         
-        analysisQueueEntry = {}
-        analysisQueueEntry['userID'] = self._userID
-        analysisQueueEntry['url'] = url
-        analysisQueueEntry['data'] = analysisData
-        
-        analysisQueue.put(analysisQueueEntry)   
-        
-        self.dbConnection.diconnect()     
+        if len(self.args) > 0:        
+            for _, value in self.args.iteritems():
+                for entry in value:
+                    analysisData = analysisData + entry + ' '
+            
+            analysisQueueEntry = {}
+            analysisQueueEntry['userID'] = self._userID
+            analysisQueueEntry['url'] = domain
+            analysisQueueEntry['data'] = analysisData.strip()
+            
+            analysisQueue.put(analysisQueueEntry)   
+            
+            self.dbConnection.diconnect()     
 
 class PrivacyProxy(proxy.Proxy):
     requestFactory = PrivacyProxyRequest
@@ -108,7 +110,7 @@ class PrivacyProxyFactory(http.HTTPFactory):
             
     def __del__(self):
         log.msg("Waiting for thread pool to finish work")
-        analysisQueue.join()
+        #analysisQueue.join()
         log.msg("All threads finished")
     
     def buildProtocol(self, addr):
