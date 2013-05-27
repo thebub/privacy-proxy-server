@@ -21,10 +21,10 @@ class AnalysisAction(object):
         raise NotImplementedError()
     
     def _checkMatch(self,hashedMatch):
-        self._parentThread.dbConnection.query(("""SELECT id FROM user_data WHERE user_id = %s AND type = %s AND hash = %s;""",(self._userID,self._type,hashedMatch)))
+        self._parentThread._dbConnection.query(("""SELECT id FROM user_data WHERE user_id = %s AND type = %s AND hash = %s;""",(self._userID,self._type,hashedMatch)))
         
-        if self._parentThread.dbConnection.rowcount() == 1:
-            return self._parentThread.dbConnection.fetchone()[0]
+        if self._parentThread._dbConnection.rowcount() == 1:
+            return self._parentThread._dbConnection.fetchone()[0]
         return False
     
     def analyze(self,data):
@@ -36,7 +36,8 @@ class AnalysisAction(object):
             for match in matches:            
                 hashAlgorithm = hashlib.sha256()
                 saltedMatch = string.join([match,self._dataSalt],"")
-                hashedMatch = hashAlgorithm.update(saltedMatch)
+                hashAlgorithm.update(saltedMatch)
+                hashedMatch = hashAlgorithm.hexdigest() 
                 matchID = self._checkMatch(hashedMatch)
                 
                 if matchID:
