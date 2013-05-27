@@ -6,8 +6,11 @@ Created on 23.05.2013
 from net.thebub.privacyproxy.proxyserver.actions.analysisAction import AnalysisAction,analysisActions
 
 import re
+import PrivacyProxyAPI_pb2
 
 class DateAnalysisAction(AnalysisAction):
+    
+    _type = PrivacyProxyAPI_pb2.date
     
     def match(self, data):
         matches = re.findall("(\\b(?:19|20)\d\d-(?:0?[1-9]|1[012])-(?:0?[1-9]|[12][0-9]|3[01])\\b)", data)

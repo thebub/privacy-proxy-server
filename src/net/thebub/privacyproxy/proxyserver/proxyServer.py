@@ -6,7 +6,7 @@ Created on 13.05.2013
 
 from twisted.web import proxy, http
 from twisted.python import log
-import hashlib, string, re
+import hashlib, string, re, datetime
 
 from net.thebub.privacyproxy.twisted.authProxyRequest import AuthProxyRequest
 from net.thebub.privacyproxy.helpers.db import DB
@@ -71,6 +71,7 @@ class PrivacyProxyRequest(AuthProxyRequest,object):
             analysisQueueEntry = {}
             analysisQueueEntry['userID'] = self._userID
             analysisQueueEntry['url'] = domain
+            analysisQueueEntry['date'] = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             analysisQueueEntry['data'] = analysisData.strip()
             
             analysisQueue.put(analysisQueueEntry)   
