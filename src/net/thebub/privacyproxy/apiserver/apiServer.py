@@ -19,6 +19,9 @@ from net.thebub.privacyproxy.apiserver.actions.settingActions import GetSettings
 import PrivacyProxyAPI_pb2
 
 class APIServerProtocol(ProtobufDelimitedProtocol):
+    '''
+    This class implements the ProtobufDelimited protocol and parses all requets to the API server
+    '''
     
     apiActions = {
                   LoginAction.command : LoginAction,
@@ -31,20 +34,33 @@ class APIServerProtocol(ProtobufDelimitedProtocol):
                   GetSettingsAction.command : GetSettingsAction,
                   UpdateSettingAction.command : UpdateSettingAction
     }
+    '''
+    The supported API actions
+    '''
     
     _message_class = PrivacyProxyAPI_pb2.APICall
+    '''
+    The request class which is parsed by the ProtobufDelimitedProtocol
+    '''
     
     _sessionID = None
     _userID = None
     
-    def __init__(self, factory, dbObject):        
+    def __init__(self, factory, dbObject):
+        '''
+        Configure the ptocol and save the datbase connection
+        '''        
         super(APIServerProtocol,self).__init__(factory)
                 
         self._dbConnection = dbObject
         
     def _checkAuthentication(self,sessionID):
+        '''
+        Check the authentication of the user, using the supplied session ID
+        '''
         self._dbConnection.query(("""SELECT user_id,session_id FROM session WHERE session_id = %s""",(sessionID,)))
-                
+        
+        # If a row was returned the supplied session is valid
         if self._dbConnection.rowcount() == 1:
             result = self._dbConnection.fetchone()
              
@@ -55,33 +71,48 @@ class APIServerProtocol(ProtobufDelimitedProtocol):
         
         return False
         
-    def messageReceived(self, request):                                
+    def messageReceived(self, request):
+        '''
+        Parse the received message and execute the desired API action
+        '''                                
         response = None
         
+        # Check whether the requested command is supported
         if request.command is not None and self.apiActions[request.command] is not None:
+            # The command is supported. Check whether the command requires authentication
             if self.apiActions[request.command].requiresAuthentication and request.sessionKey is not None and not self._checkAuthentication(request.sessionKey):
+                # The command requires authentication, but the user is not authenticated. Return an error message
                 response = PrivacyProxyAPI_pb2.APIResponse()
                 response.command = request.command
                 response.success = False
                 response.errorCode = PrivacyProxyAPI_pb2.unauthorized
-            else:                                
+            else:
+                # No authentication was required or the user is authenticated. Process the request
                 action = self.apiActions[request.command](self._dbConnection,self._userID,self._sessionID)           
                 response = action.process(request.arguments)
         else:
+            # The API command is not supported. Create a error response
             response = PrivacyProxyAPI_pb2.APIResponse()
             response.command = PrivacyProxyAPI_pb2.unknown
             response.success = False
             response.errorCode = PrivacyProxyAPI_pb2.badRequest
         
+        # Send the response message to the client
         self.sendMessage(response)
 
 class APIServerFactory(Factory,object):
+    '''
+    This class implements the protocol factory of the API server
+    '''
     _host = None
     _user = None
     _password = None
     _database = None
     
     def __init__(self,dbHost,dbUser,dbPassword,dbName):
+        '''
+        Configure this protocol factory
+        '''
         log.msg("Initializing API server")
         # Initialize the factory
         super(APIServerFactory,self).__init__()
@@ -93,12 +124,10 @@ class APIServerFactory(Factory,object):
         
         log.msg("Initialized API server successfully")
     
-    def __del__(self):
-        # When database connection exists, close it
-        if self.databaseConnection is not None:
-            self.databaseConnection.close()
-    
-    def buildProtocol(self,addr):        
+    def buildProtocol(self,addr):
+        '''
+        Create a protocol instance and initialize a database connection for the instance
+        '''      
         # Create DB object
         dbObject = DB(self._host, self._user, self._password, self._database)
         
