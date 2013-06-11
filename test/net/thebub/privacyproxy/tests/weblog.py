@@ -27,7 +27,7 @@ if __name__ == '__main__':
     websites = test.run()
     
     w = PrivacyProxyAPI_pb2.WebLogWebsiteDataRequest()
-    w.id = websites.pages[0].id
+    w.id = websites.pages[2].id
     
     a = PrivacyProxyAPI_pb2.APICall()
     a.command = PrivacyProxyAPI_pb2.getWebpageData

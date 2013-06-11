@@ -17,7 +17,7 @@ class Connection(object):
         super(Connection,self).__init__()
         
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect(("127.0.0.1",8081))
+        self.socket.connect(("localhost",8081))
         
         self.varint_encoder = _VarintEncoder()
         self.varint_decoder = _DecodeVarint
