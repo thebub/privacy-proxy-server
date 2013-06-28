@@ -51,7 +51,8 @@ class ProtobufDelimitedProtocol(Protocol, object):
             message_end = message_start + size
             
             if dataLength < message_end:
-                log.msg('Received data is too short. Waiting for next packet.')
+                log.msg('Received data is too short. Waiting for next packet...')
+                self._unprocessed = allData[offset:]
                 return
             
             message = self._message_class()
