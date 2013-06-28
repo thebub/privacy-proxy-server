@@ -15,6 +15,7 @@ class ProtobufDelimitedProtocol(Protocol, object):
     '''
     
     _factory = None
+    _unprocessed = b""
 
     def __init__(self, factory):
         '''
@@ -36,22 +37,31 @@ class ProtobufDelimitedProtocol(Protocol, object):
     def dataReceived(self, data):
         '''
         This method is called whenever data was received on the socket
-        '''    
-        data_length = len(data)
+        '''   
+        allData = self._unprocessed + data
+        offset = 0
+          
+        dataLength = len(allData)
+                
+        while (dataLength - offset) > 0:
+                
+            (size, pos) = self.varint_decoder(allData, offset)
             
-        # Decode the length of the expected message
-        (size, pos) = self.varint_decoder(data, 0)
+            message_start = offset + pos
+            message_end = message_start + size
+            
+            if dataLength < message_end:
+                log.msg('Received data is too short. Waiting for next packet.')
+                return
+            
+            message = self._message_class()
+            message.ParseFromString(allData[message_start:message_end])
+            
+            self.messageReceived(message)
+            
+            offset = message_end
         
-        if data_length - (size + pos) < 0:
-            # TODO: Save buffer and wait for more data
-            log.msg()
-        
-        # Use the specified class to decode the message
-        message = self._message_class()
-        message.ParseFromString(data[pos:size + pos])
-        
-        # Pass the decoded message to the message received function
-        self.messageReceived(message)
+        self._unprocessed = allData[offset:]        
 
     def sendMessage(self, message):
         '''
