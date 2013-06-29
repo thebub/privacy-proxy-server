@@ -78,7 +78,7 @@ class APIServerProtocol(ProtobufDelimitedProtocol):
         response = None
         
         # Check whether the requested command is supported
-        if request.command is not None and self.apiActions[request.command] is not None:
+        if request.command is not None and request.command in self.apiActions:
             # The command is supported. Check whether the command requires authentication
             if self.apiActions[request.command].requiresAuthentication and request.sessionKey is not None and not self._checkAuthentication(request.sessionKey):
                 # The command requires authentication, but the user is not authenticated. Return an error message
