@@ -87,7 +87,7 @@ class AnalysisThread(threading.Thread):
             websiteID = self._dbConnection.fetchone()[0]
         
         # Check whether the user visited the website before
-        self._dbConnection.query(("""SELECT 1 FROM website_log WHERE user_id = %s AND website_id = %s;""",(userID,url)))
+        self._dbConnection.query(("""SELECT 1 FROM website_log WHERE user_id = %s AND website_id = %s;""",(userID,websiteID)))
         
         if self._dbConnection.rowcount() != 1:
             # If the user has not visisted the website before create the user website link in the database
